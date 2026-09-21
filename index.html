@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Salt Blend Calculator</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#162033;--muted:#68738a;--line:#dfe5ef;--accent:#4263eb;--accent2:#edf0ff;--good:#16855b;--danger:#c63d52;--shadow:0 12px 35px #1e2b4a12}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:960px;margin:0 auto;padding:28px 16px 48px}.hero{margin-bottom:22px}.eyebrow{color:var(--accent);font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:.75rem}.hero h1{font-size:clamp(2rem,5vw,3.25rem);line-height:1.04;margin:7px 0 10px}.hero p{margin:0;color:var(--muted);max-width:680px}.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}h2{font-size:1.1rem;margin:0 0 16px}.fields{display:grid;grid-template-columns:1fr 130px;gap:12px}.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}.field label{font-weight:700;font-size:.88rem}.hint{font-size:.78rem;color:var(--muted);font-weight:400}input,select,button{font:inherit}input,select{width:100%;border:1px solid #cbd4e2;border-radius:10px;padding:11px 12px;color:var(--ink);background:#fff}input:focus,select:focus{outline:3px solid #4263eb33;border-color:var(--accent)}.results{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}.metric{background:var(--accent2);border-radius:13px;padding:13px}.metric .label{font-size:.78rem;color:var(--muted)}.metric .value{font-size:1.6rem;font-weight:800;margin-top:3px}.metric.wide{grid-column:1/-1}.ingredients{margin-top:12px}.ing{display:grid;grid-template-columns:1fr 105px 38px;gap:8px;margin-bottom:8px;align-items:center}.ing button{border:0;background:#fff0f2;color:var(--danger);border-radius:9px;height:42px;font-size:1.2rem;cursor:pointer}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.primary,.secondary{border-radius:10px;padding:11px 15px;cursor:pointer;font-weight:750}.primary{border:0;background:var(--accent);color:#fff}.secondary{border:1px solid var(--line);background:#fff;color:var(--ink)}.note{margin-top:16px;color:var(--muted);font-size:.82rem}.breakdown{margin-top:18px;border-top:1px solid var(--line);padding-top:15px}.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eef1f6}.row:last-child{border:0}.empty{color:var(--muted);font-size:.9rem;padding:8px 0}@media(max-width:700px){.grid{grid-template-columns:1fr}.fields{grid-template-columns:1fr 110px}.card{padding:16px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="hero"><div class="eyebrow">Kitchen tool</div><h1>Salt blend calculator</h1><p>Set the food amount and target saltiness, then build a repeatable rub or seasoning blend around the salt anchor.</p></header>
+<section class="grid">
+<div class="card">
+<h2>Batch settings</h2>
+<div class="fields"><div class="field"><label for="weight">Food weight</label><input id="weight" type="number" min="0" step="0.1" value="1000"></div><div class="field"><label for="unit">Unit</label><select id="unit"><option value="g">g</option><option value="kg">kg</option><option value="oz">oz</option><option value="lb">lb</option></select></div></div>
+<div class="field"><label for="saltiness">Target saltiness <span class="hint">percent of food weight</span></label><input id="saltiness" type="number" min="0" step="0.1" value="1"></div>
+<h2>Ingredients relative to salt</h2>
+<div id="ingredients" class="ingredients"></div>
+<div class="actions"><button class="secondary" id="add">＋ Add ingredient</button><button class="secondary" id="reset">Reset</button></div>
+<div class="note">Salt is estimated at 390 mg sodium per gram. Ingredient ratios are grams per gram of salt.</div>
+</div>
+<div class="card">
+<h2>Batch result</h2>
+<div class="results"><div class="metric"><div class="label">Salt anchor</div><div class="value" id="saltOut">0.00 g</div></div><div class="metric"><div class="label">Sodium from salt</div><div class="value" id="sodiumOut">0 mg</div></div><div class="metric wide"><div class="label">Total blend</div><div class="value" id="totalOut">0.00 g</div></div></div>
+<div class="breakdown"><h2>Ingredient amounts</h2><div id="breakdown"></div></div>
+</div></section>
+</main>
+<script>
+const defaults=[['Black pepper',.5],['Garlic powder',.35],['Paprika',.5]];
+const $=id=>document.getElementById(id); const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d):'0.00';
+function renderInputs(){ $('ingredients').innerHTML=''; defaults.forEach((x,i)=>{const row=document.createElement('div');row.className='ing';row.innerHTML=`<input aria-label="Ingredient ${i+1} name" class="iname" value="${x[0]}"><input aria-label="${x[0]} ratio" class="ratio" type="number" min="0" step=".05" value="${x[1]}"><button type="button" aria-label="Remove ${x[0]}" data-remove="${i}">×</button>`;$('ingredients').appendChild(row)}); bindRows(); calculate()}
+function bindRows(){document.querySelectorAll('.iname,.ratio').forEach(e=>e.addEventListener('input',calculate));document.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>{b.parentElement.remove();calculate()}))}
+function grams(){const n=parseFloat($('weight').value)||0;return n*({g:1,kg:1000,oz:28.349523125,lb:453.59237}[$('unit').value]||1)}
+function calculate(){const salt=Math.max(0,grams())*(Math.max(0,parseFloat($('saltiness').value)||0)/100);let total=salt;const items=[];document.querySelectorAll('.ing').forEach(row=>{const name=row.querySelector('.iname').value.trim()||'Unnamed ingredient';const ratio=Math.max(0,parseFloat(row.querySelector('.ratio').value)||0);const amount=salt*ratio;total+=amount;items.push({name,amount})});$('saltOut').textContent=fmt(salt)+' g';$('sodiumOut').textContent=fmt(salt*390,0)+' mg';$('totalOut').textContent=fmt(total)+' g';$('breakdown').innerHTML=items.length?items.map(x=>`<div class="row"><span>${escapeHtml(x.name)}</span><strong>${fmt(x.amount)} g</strong></div>`).join(''):'<div class="empty">No additional ingredients.</div>'}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('add').addEventListener('click',()=>{const row=document.createElement('div');row.className='ing';row.innerHTML='<input aria-label="New ingredient name" class="iname" placeholder="Ingredient name"><input aria-label="New ingredient ratio" class="ratio" type="number" min="0" step=".05" value="0"><button type="button" aria-label="Remove ingredient">×</button>';$('ingredients').appendChild(row);row.querySelector('button').addEventListener('click',()=>{row.remove();calculate()});bindRows();row.querySelector('.iname').focus();calculate()});
+$('reset').addEventListener('click',()=>{ $('weight').value=1000;$('unit').value='g';$('saltiness').value=1;defaults.splice(0,defaults.length,...[['Black pepper',.5],['Garlic powder',.35],['Paprika',.5]]);renderInputs()});['weight','unit','saltiness'].forEach(id=>$(id).addEventListener('input',calculate));renderInputs();
+</script></body></html>
